@@ -65,6 +65,12 @@ func (p *nfsProvisioner) Provision(options controller.VolumeOptions) (*v1.Persis
 	pvName := strings.Join([]string{pvcNamespace, pvcName, options.PVName}, "-")
 
 	fullPath := filepath.Join(mountPath, pvName)
+
+	// volume.beta.kubernetes.io/nfs-mount-path exists then override the fullPath
+	if val, ok := options.PVC.Annotations["volume.beta.kubernetes.io/nfs-mount-path"]; ok {
+		fullPath = filepath.Join(mountPath, val)
+	}
+
 	glog.V(4).Infof("creating path %s", fullPath)
 	if err := os.MkdirAll(fullPath, 0777); err != nil {
 		return nil, errors.New("unable to create directory to provision new pv: " + err.Error())
@@ -72,6 +78,11 @@ func (p *nfsProvisioner) Provision(options controller.VolumeOptions) (*v1.Persis
 	os.Chmod(fullPath, 0777)
 
 	path := filepath.Join(p.path, pvName)
+
+	// volume.beta.kubernetes.io/nfs-mount-path exists then override the path
+	if val, ok := options.PVC.Annotations["volume.beta.kubernetes.io/nfs-mount-path"]; ok {
+		path = filepath.Join(p.path, val)
+	}
 
 	pv := &v1.PersistentVolume{
 		ObjectMeta: metav1.ObjectMeta{
